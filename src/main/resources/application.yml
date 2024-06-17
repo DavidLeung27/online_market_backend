@@ -1,0 +1,27 @@
+spring:
+  web:
+    locale: en
+  datasource:
+    url: jdbc:mysql://localhost:3306/online_market
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    username: root
+    password: D1479512d!
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: true
+    properties:
+      hibernate:
+        search:
+          backend:
+            type: lucene
+            directory:
+              root: /lucene
+      format_sql: true
+    #        dialect: org.hibernate.dialect.MySQLDialect
+    database: mysql
+  servlet:
+    multipart:
+      enabled: true
+      max-file-size: 5MB
+      location: /img
