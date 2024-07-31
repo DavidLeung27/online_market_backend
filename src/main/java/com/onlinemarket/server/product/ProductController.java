@@ -26,19 +26,20 @@ public class ProductController {
     @Autowired
     private ProductService productService;
 
+    // @GetMapping("/product")
+    // public Result GetProduct(@RequestParam String productName, @RequestParam
+    // String category,
+    // @RequestParam(required = true) Integer page) {
+    // System.out.println(category);
+    // System.out.println(page);
+    // System.out.println(productName);
+    // return productService.GetProduct(category, page);
+    // }
+
     @GetMapping("/product")
-    public Result GetProduct(@RequestParam String productName, @RequestParam String category,
-            @RequestParam(required = true) Integer page) {
-        System.out.println(category);
-        System.out.println(page);
-        System.out.println(productName);
-        return productService.GetProduct(category, page);
-    }
+    public Result GetProducts(ProductFilterCiteria productFilterCiteria) {
 
-    @GetMapping("/product/v2")
-    public Result GetProductV2(ProductFilterCiteria productFilterCiteria) {
-
-        return productService.GetProductV2(productFilterCiteria);
+        return productService.GetProducts(productFilterCiteria);
     }
 
     @PostMapping("/addProduct")

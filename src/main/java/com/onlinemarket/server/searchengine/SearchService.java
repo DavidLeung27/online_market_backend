@@ -1,6 +1,7 @@
 package com.onlinemarket.server.searchengine;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 import org.hibernate.search.mapper.orm.Search;
 import org.hibernate.search.mapper.orm.session.SearchSession;
@@ -22,6 +23,7 @@ public class SearchService {
 
         public Result SearchInSearchBar(String keyword) {
                 SearchSession searchSession = Search.session(entityManager);
+                System.out.println(keyword);
 
                 List<String> searchResult = searchSession.search(Product.class)
                                 .select(f -> f.field("productName", String.class))
@@ -34,9 +36,11 @@ public class SearchService {
                                                                 .matching(keyword)
                                                                 .fuzzy(2)))
                                 .sort(f -> f.score().desc())
-                                .fetchHits(5);
-                System.out.println(searchResult.size());
-                return new Result(1, "Search success", searchResult);
+                                .fetchAllHits();
+                List<String> searchUniqueResult = searchResult.stream().distinct().limit(5)
+                                .collect(Collectors.toList());
+                System.out.println(searchUniqueResult.size());
+                return new Result(1, "Search success", searchUniqueResult);
 
         }
 

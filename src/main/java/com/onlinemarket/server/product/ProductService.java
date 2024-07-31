@@ -24,19 +24,22 @@ public class ProductService {
     @Autowired
     private ProductRepository productRepository;
 
-    public Result GetProduct(String category, Integer page) {
-        Integer noOfResult = productRepository.countByLinkedCategory_Category(category);
+    // public Result GetProduct(String category, Integer page) {
+    // Integer noOfResult =
+    // productRepository.countByLinkedCategory_Category(category);
 
-        Pageable pageElements = PageRequest.of(page - 1, 20);
-        List<Product> searchProducts = productRepository.findByLinkedCategory_Category(category, pageElements);
+    // Pageable pageElements = PageRequest.of(page - 1, 20);
+    // List<Product> searchProducts =
+    // productRepository.findByLinkedCategory_Category(category, pageElements);
 
-        // ProductResult productResult = new ProductResult(noOfResult, searchProducts);
+    // // ProductResult productResult = new ProductResult(noOfResult,
+    // searchProducts);
 
-        // return new Result(1, "test", productResult);
-        return new Result(1, "test", null);
-    }
+    // // return new Result(1, "test", productResult);
+    // return new Result(1, "test", null);
+    // }
 
-    public Result GetProductV2(ProductFilterCiteria productFilterCiteria) {
+    public Result GetProducts(ProductFilterCiteria productFilterCiteria) {
         Pageable pageElement = PageRequest.of(productFilterCiteria.getPage() - 1,
                 productFilterCiteria.getPageSize(), Sort.by("hitRate").descending());
 
