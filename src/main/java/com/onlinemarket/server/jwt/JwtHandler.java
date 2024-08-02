@@ -46,6 +46,17 @@ public class JwtHandler {
                 .compact();
     }
 
+    public String generateToken(String googleEmail) {
+
+        return Jwts.builder()
+                .claim("googleEmail", googleEmail)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
+                .signWith(secretKey)
+                .serializeToJsonWith(new GsonSerializer<>(new Gson()))
+                .compact();
+    }
+
     public String checkToken(String jwt) {
 
         try {
