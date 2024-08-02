@@ -6,12 +6,20 @@ import com.google.api.client.http.HttpTransport;
 import com.google.api.client.http.javanet.NetHttpTransport;
 import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
 import com.onlinemarket.server.jwt.JwtHandler;
 import com.onlinemarket.server.result.Result;
+
+import reactor.core.publisher.Mono;
+
+// import org.hibernate.mapping.Map;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.stereotype.Service;
+import org.springframework.web.reactive.function.client.WebClient;
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
@@ -20,6 +28,8 @@ import java.sql.Timestamp;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Random;
 
@@ -35,6 +45,9 @@ public class UserService {
 
     @Autowired
     private JwtHandler jwtHandler;
+
+    @Autowired
+    private GoogleInfo googleInfo;
 
     public Result CreateUser(User user) {
         String email = user.getEmail();
@@ -104,37 +117,88 @@ public class UserService {
         return new Result(1, "Jwt is valid", jwtCheckMessage);
     }
 
-    public Result LoginByOauth2Google(
-            String authorizationHeader) throws GeneralSecurityException, IOException {
-        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer ")) {
+    public Result LoginByOauth2Google(String authorizationHeader) throws GeneralSecurityException, IOException {
+
+        System.out.println("LoginByOauth2Google Request");
+
+        if (authorizationHeader == null || !authorizationHeader.startsWith("Bearer")) {
             System.out.println("No authorization code from request");
-            return new Result(0, "Authorization code are null or format is not correct", null);
+            return new Result(0, "Authorization code are null or format is not correct",
+                    null);
         }
 
-        String token = authorizationHeader.replace("Bearer ", "");
-        HttpTransport transport = new NetHttpTransport();
-        JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
-        final String CLIENT_ID = "510468186222-ut83218bhe7j3e908oh417vj3algu10l.apps.googleusercontent.com";
+        String authCode = authorizationHeader.replace("Bearer ", "");
 
-        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport, jsonFactory)
-                .setAudience(Collections.singletonList(CLIENT_ID))
-                .build();
+        String CLIENT_ID = googleInfo.getId();
 
-        GoogleIdToken idToken;
+        String CLIENT_SECRET = googleInfo.getSecret();
 
-        idToken = verifier.verify(token);
+        Map<String, Object> body = new HashMap<>();
+        body.put("client_id", CLIENT_ID);
+        body.put("client_secret", CLIENT_SECRET);
+        body.put("code", authCode);
+        body.put("grant_type", "authorization_code");
+        body.put("redirect_uri", "http://localhost:3000/online-market/login");
 
-        if (idToken == null) {
+        WebClient.Builder webclientBuilder = WebClient.builder();
+
+        System.out.println("Send Request to googleapis to exchange auth code totoken");
+
+        Mono<String> googleResponse = webclientBuilder.build()
+                .post()
+                .uri("https://oauth2.googleapis.com/token")
+                .contentType(MediaType.APPLICATION_JSON)
+                .bodyValue(body)
+                .retrieve()
+                .bodyToMono(String.class);
+
+        System.out.println("Googleapis responsed");
+
+        String id_token = null;
+
+        try {
+            id_token = googleResponse.map(responseBody -> {
+                JsonObject json = JsonParser.parseString(responseBody).getAsJsonObject();
+                return json.get("id_token").getAsString();
+            }).block();
+
+        } catch (Exception e) {
             System.out.println("Verification failure");
-            return new Result(0, "Verification fail", null);
+            return new Result(0, "Verification failure", null);
+        }
+
+        if (id_token == null) {
+            System.out.println("Verification failure");
+            return new Result(0, "Verification failure", null);
         }
 
         System.out.println("Verification success");
+
+        HttpTransport transport = new NetHttpTransport();
+        JsonFactory jsonFactory = GsonFactory.getDefaultInstance();
+
+        GoogleIdTokenVerifier verifier = new GoogleIdTokenVerifier.Builder(transport,
+                jsonFactory)
+                .setAudience(Collections.singletonList(CLIENT_ID))
+                .build();
+
+        GoogleIdToken idToken = verifier.verify(id_token);
+
+        if (idToken == null) {
+            System.out.println("Google JWT Decdoe Fail");
+            return new Result(0, "Google JWT Decdoe Fail", null);
+        }
+
+        System.out.println("Google JWT Decdoe Success");
         GoogleIdToken.Payload payload = idToken.getPayload();
-        String userId = payload.getSubject();
+
         String email = payload.getEmail();
 
-        return new Result(1, "Verification success", null);
+        String jwt = jwtHandler.generateToken(email);
+
+        System.out.println("Self JWT generated: " + jwt);
+
+        return new Result(1, "Verification success", jwt);
     }
 
 }

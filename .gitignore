@@ -31,3 +31,7 @@ build/
 
 ### VS Code ###
 .vscode/
+
+### Self added ###
+lucene/
+src/main/resources/application.yml
