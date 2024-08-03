@@ -8,6 +8,7 @@ import com.google.api.client.json.JsonFactory;
 import com.google.api.client.json.gson.GsonFactory;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import com.onlinemarket.server.constant.Constant;
 import com.onlinemarket.server.jwt.JwtHandler;
 import com.onlinemarket.server.result.Result;
 
@@ -47,7 +48,7 @@ public class UserService {
     private JwtHandler jwtHandler;
 
     @Autowired
-    private GoogleInfo googleInfo;
+    private Constant constant;
 
     public Result CreateUser(User user) {
         String email = user.getEmail();
@@ -129,20 +130,24 @@ public class UserService {
 
         String authCode = authorizationHeader.replace("Bearer ", "");
 
-        String CLIENT_ID = googleInfo.getId();
-
-        String CLIENT_SECRET = googleInfo.getSecret();
+        String CLIENT_ID = constant.getId();
+        System.out.println("CLIENT_ID: " + CLIENT_ID);
+        String CLIENT_SECRET = constant.getSecret();
+        System.out.println("CLIENT_SECRET: " + CLIENT_SECRET);
+        String REDIRECT_URI = constant.getRedirect();
+        System.out.println("REDIRECT_URI: " + REDIRECT_URI);
+        System.out.println("authCode: " + authCode);
 
         Map<String, Object> body = new HashMap<>();
         body.put("client_id", CLIENT_ID);
         body.put("client_secret", CLIENT_SECRET);
         body.put("code", authCode);
         body.put("grant_type", "authorization_code");
-        body.put("redirect_uri", "http://localhost:3000/online-market/login");
+        body.put("redirect_uri", REDIRECT_URI);
 
         WebClient.Builder webclientBuilder = WebClient.builder();
 
-        System.out.println("Send Request to googleapis to exchange auth code totoken");
+        System.out.println("Send Request to googleapis to exchange auth code to token");
 
         Mono<String> googleResponse = webclientBuilder.build()
                 .post()
@@ -153,6 +158,7 @@ public class UserService {
                 .bodyToMono(String.class);
 
         System.out.println("Googleapis responsed");
+        System.out.println(googleResponse);
 
         String id_token = null;
 
